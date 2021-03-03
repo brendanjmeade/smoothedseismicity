@@ -1,0 +1,2 @@
+# smoothedseismicity
+Smoothed seismicity model

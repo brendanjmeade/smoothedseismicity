@@ -10,7 +10,7 @@ timespan_years = (df.datetime.max() - df.datetime.min()) / np.timedelta64(1, "Y"
 
 # JUST FOR THE TIME BEING
 # CLIP TO EVENTS LARGER THAN 5 FOR SPEED
-df[df.magnitude>5.0]
+df = df[df.magnitude>5.0]
 
 # Bins from Helmstetter et al. 2006
 grid_spacing = 0.05

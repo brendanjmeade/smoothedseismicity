@@ -21,7 +21,8 @@ def quick_plot(field, colorbar_string, lon_edges, lat_edges):
 
 def calc_kernel_influence(src_lon, src_lat, target_lon, target_lat, d):
     """ Calculate the influence of an individual earthquake at a target location """
-    Cd = 1
+    # Cd = 1
+    Cd = 1 / np.sqrt(d)  # not sure this is right
     kernel_exponent = 1.5
     delta_lon = src_lon - target_lon
     delta_lat = src_lat - target_lat
@@ -55,28 +56,27 @@ def grid_seismicity(df):
     return grid_spacing, lon_edges, lat_edges
 
 
-def main():
-    df = read_data()
-    df = df[df.magnitude > 5.0]  # CLIP TO EVENTS LARGER THAN 5 FOR SPEED
-    grid_spacing, lon_edges, lat_edges = grid_seismicity(df)
-
-    # Helmstetter et al. 2006 calcuations
+def grid_centers(grid_spacing, lon_edges, lat_edges):
     lon_centers = lon_edges[1:-2] + grid_spacing  # longitudes of bin centers
     lat_centers = lat_edges[1:-2] + grid_spacing  # latitudes of bin centers
     lon_centers_mat, lat_centers_mat = np.meshgrid(
         lon_centers, lat_centers
     )  # Plaid gridding of bin centers
-    N = len(df)  # number of earthquakes (H2006, eq 1)
-    d0 = grid_spacing  # differential degrees for (H2006, eq 3)
+    return lon_centers, lat_centers, lon_centers_mat, lat_centers_mat
 
-    # # Let's calculate the back ground rate with an assumed smoothing bandwith
-    # Kr = calc_kernel_influence(
-    #     242, 34, lon_centers_mat.flatten(), lat_centers_mat.flatten(), d0
-    # )
-    # Kr = Kr.reshape((len(lat_centers), len(lon_centers)))
-    # quick_plot(Kr, "Example kernel", lon_edges, lat_edges)
 
-    # For a single grid cell calcuate the influence of all earthquakes
+def example_kernel(
+    d0, lon_centers_mat, lat_centers_mat, lon_centers, lat_centers, lon_edges, lat_edges
+):
+    Kr = calc_kernel_influence(
+        242, 34, lon_centers_mat.flatten(), lat_centers_mat.flatten(), d0
+    )
+    Kr = Kr.reshape((len(lat_centers), len(lon_centers)))
+    quick_plot(Kr, "Example kernel", lon_edges, lat_edges)
+
+
+def calc_mu_star(df, d, lon_centers_mat, lat_centers_mat, lon_centers, lat_centers):
+    N = len(df)  # number of earthquakes
     mu_star = np.zeros(lon_centers_mat.flatten().shape)
     for i in range(0, mu_star.size):
         mu_star[i] = (
@@ -86,13 +86,29 @@ def main():
                     lat_centers_mat.flatten()[i],
                     df.longitude.values,
                     df.latitude.values,
-                    d0,
+                    d,
                 )
             )
             / N
         )
         print(i)
     mu_star = mu_star.reshape((len(lat_centers), len(lon_centers)))
+    return mu_star
+
+
+def main():
+    df = read_data()
+    df = df[df.magnitude > 5.0]  # CLIP TO EVENTS LARGER THAN 5 FOR SPEED
+    grid_spacing, lon_edges, lat_edges = grid_seismicity(df)
+    lon_centers, lat_centers, lon_centers_mat, lat_centers_mat = grid_centers(
+        grid_spacing, lon_edges, lat_edges
+    )
+
+    # Calculate mu_star
+    d0 = 0.05  # differential degrees
+    mu_star = calc_mu_star(
+        df, d0, lon_centers_mat, lat_centers_mat, lon_centers, lat_centers
+    )
     quick_plot(mu_star, "mu_star", lon_edges, lat_edges)
 
 

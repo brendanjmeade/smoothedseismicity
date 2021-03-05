@@ -1,7 +1,20 @@
+import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import distance_matrix
+
+
+def calc_kernel_influence(src_lon, src_lat, target_lon, target_lat, d):
+    """ Calculate the influence of an individual earthquake at a target location """
+    Cd = 1
+    kernel_exponent = 1.5
+    delta_lon = src_lon - target_lon
+    delta_lat = src_lat - target_lat
+    distance = np.sqrt(np.power(delta_lon, 2) + np.power(delta_lat, 2))
+    Kr = Cd / np.power(distance + d, kernel_exponent)
+    return Kr
+
 
 filename = "EHDD_old.csv"
 df = pd.read_csv(filename)
@@ -51,3 +64,21 @@ lon_centers_mat, lat_centers_mat = np.meshgrid(
 N = len(df)  # number of earthquakes (H2006, eq 1)
 d0 = grid_spacing  # differential degrees for (H2006, eq 3)
 
+
+# Let's calculate the back ground rate with an assumed smoothing bandwith
+Kr = calc_kernel_influence(
+    242, 34, lon_centers_mat.flatten(), lat_centers_mat.flatten(), d0
+)
+Kr = Kr.reshape((len(lat_centers), len(lon_centers)))
+# Kr = Kr.T
+plt.figure()
+plt.imshow(
+    Kr,
+    interpolation="nearest",
+    origin="lower",
+    extent=[lon_edges[0], lon_edges[-1], lat_edges[0], lat_edges[-1]],
+)
+plt.show(block=False)
+plt.xlabel("longitude")
+plt.ylabel("latitude")
+plt.colorbar(label="mu_star")

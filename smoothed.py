@@ -21,8 +21,7 @@ def quick_plot(field, colorbar_string, lon_edges, lat_edges):
 
 def calc_kernel_influence(src_lon, src_lat, target_lon, target_lat, d):
     """ Calculate the influence of an individual earthquake at a target location """
-    # Cd = 1
-    Cd = 1 / np.sqrt(d)  # not sure this is right
+    Cd = d ** 2
     kernel_exponent = 1.5
     delta_lon = src_lon - target_lon
     delta_lat = src_lat - target_lat
